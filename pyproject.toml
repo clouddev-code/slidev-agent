@@ -1,0 +1,43 @@
+[project]
+name = "slidev-agent"
+version = "0.1.0"
+description = "AI-powered Slidev presentation generator using Bedrock AgentCore"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "strands-agents>=0.1.0",
+    "strands-agents-tools>=0.1.0",
+    "tavily-python>=0.5.0",
+    "boto3>=1.35.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+slidev-agent = "slidev_agent.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/slidev_agent"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

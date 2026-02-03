@@ -1,0 +1,40 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv/
+env/
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Output files (keep .gitkeep)
+output/*.md
+!output/.gitkeep
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# uv lock file (optional - you may want to commit this)
+# uv.lock
+
+# macOS
+.DS_Store
+
+# Research files (temporary)
+*-research.md
