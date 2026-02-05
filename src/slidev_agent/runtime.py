@@ -14,7 +14,7 @@ from .tools import web_extract, web_search, write_slidev_markdown
 def create_agent() -> Agent:
     """Create the Slidev agent for AgentCore Runtime."""
     model_id = os.getenv(
-        "BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+        "BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1:0"
     )
     region = os.getenv("AWS_REGION", "us-east-1")
 

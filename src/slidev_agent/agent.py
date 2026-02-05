@@ -38,7 +38,7 @@ def create_slidev_agent(
         Configured Strands Agent for Slidev generation.
     """
     model_id = model_id or os.getenv(
-        "BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+        "BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1:0"
     )
     region = region or os.getenv("AWS_REGION", "us-east-1")
 
