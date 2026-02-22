@@ -1,11 +1,11 @@
 [project]
 name = "slidev-agent"
 version = "0.1.0"
-description = "AI-powered Slidev presentation generator using Bedrock AgentCore"
+description = "AI-powered Slidev presentation generator using Bedrock AgentCore and Vertex AI"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "strands-agents>=0.1.0",
+    "strands-agents[gemini]>=0.1.0",
     "strands-agents-tools>=0.1.0",
     "tavily-python>=0.5.0",
     "boto3>=1.35.0",

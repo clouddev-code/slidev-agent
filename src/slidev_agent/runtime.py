@@ -5,23 +5,15 @@ import os
 from typing import Any
 
 from strands import Agent
-from strands.models import BedrockModel
 
+from .agent import create_model
 from .prompts import SYSTEM_PROMPT
 from .tools import web_extract, web_search, write_slidev_markdown
 
 
 def create_agent() -> Agent:
     """Create the Slidev agent for AgentCore Runtime."""
-    model_id = os.getenv(
-        "BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1:0"
-    )
-    region = os.getenv("AWS_REGION", "us-east-1")
-
-    model = BedrockModel(
-        model_id=model_id,
-        region_name=region,
-    )
+    model = create_model()
 
     agent = Agent(
         model=model,

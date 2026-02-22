@@ -11,6 +11,30 @@ from .prompts import SYSTEM_PROMPT
 from .tools import web_extract, web_search, write_slidev_markdown
 
 
+def create_model(provider: str | None = None):
+    """
+    Create a model instance based on the provider.
+
+    Args:
+        provider: Model provider ('bedrock' or 'vertexai').
+                  Defaults to env MODEL_PROVIDER or 'bedrock'.
+
+    Returns:
+        Configured model instance.
+    """
+    provider = provider or os.getenv("MODEL_PROVIDER", "bedrock")
+
+    if provider == "vertexai":
+        from strands.models.gemini import GeminiModel
+
+        model_id = os.getenv("GEMINI_MODEL_ID", "gemini-3.1-pro")
+        return GeminiModel(model_id=model_id)
+    else:
+        model_id = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
+        region = os.getenv("AWS_REGION", "us-east-1")
+        return BedrockModel(model_id=model_id, region_name=region)
+
+
 @dataclass
 class SlidevAgentConfig:
     """Configuration for Slidev Agent."""
@@ -26,26 +50,20 @@ class SlidevAgentConfig:
 def create_slidev_agent(
     model_id: str | None = None,
     region: str | None = None,
+    provider: str | None = None,
 ) -> Agent:
     """
     Create a Slidev Agent instance.
 
     Args:
-        model_id: Bedrock model ID to use. Defaults to env BEDROCK_MODEL_ID or Claude Sonnet.
-        region: AWS region for Bedrock. Defaults to env AWS_REGION or us-east-1.
+        model_id: Bedrock model ID (kept for backward compatibility).
+        region: AWS region (kept for backward compatibility).
+        provider: Model provider ('bedrock' or 'vertexai').
 
     Returns:
         Configured Strands Agent for Slidev generation.
     """
-    model_id = model_id or os.getenv(
-        "BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1:0"
-    )
-    region = region or os.getenv("AWS_REGION", "us-east-1")
-
-    model = BedrockModel(
-        model_id=model_id,
-        region_name=region,
-    )
+    model = create_model(provider)
 
     agent = Agent(
         model=model,
