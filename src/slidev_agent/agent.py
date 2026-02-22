@@ -27,7 +27,7 @@ def create_model(provider: str | None = None):
     if provider == "vertexai":
         from strands.models.gemini import GeminiModel
 
-        model_id = os.getenv("GEMINI_MODEL_ID", "gemini-3.1-pro")
+        model_id = os.getenv("GEMINI_MODEL_ID", "gemini-3.1-pro-preview")
         return GeminiModel(model_id=model_id)
     else:
         model_id = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")

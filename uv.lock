@@ -1487,7 +1487,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "rich", specifier = ">=13.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4.0" },
-    { name = "strands-agents", extras = ["gemini"], specifier = ">=0.1.0" },
+    { name = "strands-agents", extras = ["gemini"], specifier = ">=1.27.0" },
     { name = "strands-agents-tools", specifier = ">=0.1.0" },
     { name = "tavily-python", specifier = ">=0.5.0" },
 ]
@@ -1538,7 +1538,7 @@ wheels = [
 
 [[package]]
 name = "strands-agents"
-version = "1.24.0"
+version = "1.27.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -1553,9 +1553,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9a/64/3e4178c512147e7566583544923bb42d84d15f31c22904d79dc94bdaf1d0/strands_agents-1.24.0.tar.gz", hash = "sha256:a3755fcc0befdd99c1b5a5d8a8c98590490f0bb7ab65092dcf9397f7551331de", size = 673930 }
+sdist = { url = "https://files.pythonhosted.org/packages/b9/54/bf0910a1c40feacaedcf5d30840be990eabd09eff5375fa40525ba530c8d/strands_agents-1.27.0.tar.gz", hash = "sha256:84d0b670e534d7c281104a22035c10de8d43e9ad8ee589bde16f54a8387b2c56", size = 712878 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4a/f0/81e96a356cf937ae697e28514b9e850d390802341df4ae6498ab737de744/strands_agents-1.24.0-py3-none-any.whl", hash = "sha256:035e0b8aa404bfaada4459a841aeed66f2a165fbb66f4d448dd6eceb4c14be44", size = 337217 },
+    { url = "https://files.pythonhosted.org/packages/6a/ca/d5c269f83929bdc753dce3c6091a1671e50268769b0ace009264424bf165/strands_agents-1.27.0-py3-none-any.whl", hash = "sha256:d9012515a7b4f324a600cacc539e837a51b3f7fe21da7efe1764186ade3be498", size = 351988 },
 ]
 
 [package.optional-dependencies]

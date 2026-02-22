@@ -5,7 +5,7 @@ description = "AI-powered Slidev presentation generator using Bedrock AgentCore 
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "strands-agents[gemini]>=0.1.0",
+    "strands-agents[gemini]>=1.27.0",
     "strands-agents-tools>=0.1.0",
     "tavily-python>=0.5.0",
     "boto3>=1.35.0",
