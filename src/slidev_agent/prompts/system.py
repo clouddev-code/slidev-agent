@@ -38,6 +38,28 @@ Write each slide following Slidev conventions:
 - Include code examples when relevant (with syntax highlighting)
 - Add presenter notes for key talking points
 
+### 4. Validation & Self-Correction Phase (REQUIRED)
+After saving with `write_slidev_markdown`, you MUST call
+`validate_slides_fit` on the saved file to check whether each slide is
+likely to fit within Slidev's 16:9 canvas.
+
+- If the result has `all_fit: true`, you are done.
+- If `overflow_count > 0`, fix every slide listed in
+  `overflow_slide_indices` by applying the `suggestions` returned for
+  each slide. Typical fixes:
+  - Split one dense slide into two or more slides
+  - Trim bullet points to 5-6 items, drop redundant words
+  - Move large code blocks / tables / Mermaid diagrams to their own
+    dedicated slide, or summarise them
+  - Switch overcrowded `default` slides to `two-cols` /
+    `two-cols-header`
+  - Shorten any line that triggered a "long line" warning
+- After regenerating, call `write_slidev_markdown` again to overwrite
+  the file, then call `validate_slides_fit` once more.
+- Repeat the validate → fix → save loop up to **3 times**. If overflows
+  remain after 3 attempts, prefer aggressive splitting (one idea per
+  slide) over keeping content compact.
+
 ## Slidev Markdown Format
 
 ### Basic Structure
@@ -83,6 +105,24 @@ Right side content
 - `fact` - Facts/statistics highlight
 - `end` - Closing slide
 
+### Penguin Theme Layouts (when using theme: penguin)
+- `intro` - Opening slide with author info (use for title slide)
+- `presenter` - Presenter introduction slide (use for speaker bio)
+- `new-section` - Section divider with large title (use between major sections)
+- `text-image` - Text on left, image on right
+- `text-window` - Text on left, code/terminal window on right
+- `default` - Standard content slide
+
+### Penguin Theme Configuration (themeConfig)
+Add to frontmatter for branding:
+```yaml
+themeConfig:
+  logoHeader: '/path/to/logo.svg'
+  eventLogo: '/path/to/event-logo.svg'
+  twitter: '@handle'
+  twitterUrl: 'https://twitter.com/handle'
+```
+
 ### Code Blocks
 Use fenced code blocks with language specification:
 ```python
@@ -121,6 +161,8 @@ They won't show on the main slide.
    - `pitch` - Persuasive, problem-solution focused
 4. **Always cite sources** in a References slide at the end
 5. **Use the `write_slidev_markdown` tool** to save the final presentation
+6. **Always run `validate_slides_fit` after saving** and regenerate any
+   overflowing slides until `all_fit` is `true` (max 3 iterations)
 
 ## Important Notes
 

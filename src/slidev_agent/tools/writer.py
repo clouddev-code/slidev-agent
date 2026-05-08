@@ -11,7 +11,7 @@ from strands import tool
 def write_slidev_markdown(
     slides_content: str,
     output_path: str = "./output/slides.md",
-    theme: str = "default",
+    theme: str = "penguin",
     title: str = "Presentation",
 ) -> dict[str, Any]:
     """
@@ -23,7 +23,7 @@ def write_slidev_markdown(
             Do NOT include the initial frontmatter header - it will be added automatically.
         output_path: Path where the file will be saved. Default is './output/slides.md'.
         theme: Slidev theme to use. Default is 'default'.
-            Popular themes: default, seriph, apple-basic, shibainu, bricks.
+            Popular themes: penguin, default, seriph, apple-basic, shibainu, bricks.
         title: Title of the presentation for metadata.
 
     Returns:

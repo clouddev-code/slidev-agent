@@ -8,6 +8,11 @@ AI-powered Slidev presentation generator using Amazon Bedrock AgentCore and Stra
 - Generates Slidev-compatible Markdown presentations
 - Multiple presentation styles (technical, business, educational, pitch)
 - Deployable to AgentCore Runtime for serverless operation
+- **Slide overflow self-check**: after generation, the agent calls
+  `validate_slides_fit` to detect slides that are unlikely to fit within
+  the 16:9 frame (too many lines, oversized code blocks, long lines,
+  etc.) and automatically regenerates the offending slides until every
+  slide is within the budget (max 3 iterations)
 
 ## Requirements
 
@@ -49,7 +54,7 @@ slidev-agent "Kubernetes入門" \
 slidev-agent "トピック" \
     --num-slides 10 \
     --style technical \
-    --theme default \
+    --theme penguin \
     --language ja \
     --output ./output/slides.md
 ```
@@ -60,7 +65,7 @@ slidev-agent "トピック" \
 |--------|-------|---------|-------------|
 | `--num-slides` | `-n` | 10 | Target number of slides |
 | `--style` | `-s` | technical | Style (technical/business/educational/pitch) |
-| `--theme` | `-t` | default | Slidev theme |
+| `--theme` | `-t` | penguin | Slidev theme |
 | `--language` | `-l` | ja | Output language |
 | `--output` | `-o` | ./output/slides.md | Output file path |
 
@@ -140,8 +145,9 @@ slidev-agent/
 │       ├── runtime.py      # AgentCore Runtime handler
 │       ├── tools/
 │       │   ├── __init__.py
-│       │   ├── search.py   # web_search, web_extract
-│       │   └── writer.py   # write_slidev_markdown
+│       │   ├── search.py     # web_search, web_extract
+│       │   ├── writer.py     # write_slidev_markdown
+│       │   └── validator.py  # validate_slides_fit (frame overflow check)
 │       └── prompts/
 │           ├── __init__.py
 │           └── system.py   # System prompt

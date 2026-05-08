@@ -8,7 +8,12 @@ from strands import Agent
 from strands.models import BedrockModel
 
 from .prompts import SYSTEM_PROMPT
-from .tools import web_extract, web_search, write_slidev_markdown
+from .tools import (
+    validate_slides_fit,
+    web_extract,
+    web_search,
+    write_slidev_markdown,
+)
 
 
 def create_model(provider: str | None = None):
@@ -28,11 +33,11 @@ def create_model(provider: str | None = None):
         from strands.models.gemini import GeminiModel
 
         model_id = os.getenv("GEMINI_MODEL_ID", "gemini-3.1-pro-preview")
-        return GeminiModel(model_id=model_id)
+        return GeminiModel(model_id=model_id, max_tokens=16384)
     else:
         model_id = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
         region = os.getenv("AWS_REGION", "us-east-1")
-        return BedrockModel(model_id=model_id, region_name=region)
+        return BedrockModel(model_id=model_id, region_name=region, max_tokens=16384)
 
 
 @dataclass
@@ -42,7 +47,7 @@ class SlidevAgentConfig:
     topic: str
     num_slides: int = 10
     style: Literal["technical", "business", "educational", "pitch"] = "technical"
-    theme: str = "default"
+    theme: str = "penguin"
     language: str = "ja"
     output_path: str = "./output/slides.md"
 
@@ -68,7 +73,12 @@ def create_slidev_agent(
     agent = Agent(
         model=model,
         system_prompt=SYSTEM_PROMPT,
-        tools=[web_search, web_extract, write_slidev_markdown],
+        tools=[
+            web_search,
+            web_extract,
+            write_slidev_markdown,
+            validate_slides_fit,
+        ],
     )
 
     return agent
@@ -113,8 +123,14 @@ def build_user_prompt(config: SlidevAgentConfig) -> str:
 2. 必要に応じてweb_extractで詳細情報を取得してください
 3. 収集した情報を基にスライドを構成してください
 4. write_slidev_markdownツールで最終的なMarkdownファイルを出力してください
+5. validate_slides_fitツールで枠内に収まるか必ず検証してください
+6. overflow_count > 0 の場合、該当スライド (overflow_slide_indices) を
+   suggestions に従って分割・要約・レイアウト変更などで作り直し、
+   write_slidev_markdown で上書き保存 → 再度 validate_slides_fit、
+   というループを最大 3 回繰り返してください
+7. all_fit が true になったら完了です
 
-必ず最後にwrite_slidev_markdownツールを使用してファイルを保存してください。
+必ず最後に validate_slides_fit を呼び、`all_fit: true` を確認してから停止してください。
 """
 
     return prompt

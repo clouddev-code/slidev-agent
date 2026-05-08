@@ -45,7 +45,7 @@ def build_prompt_from_payload(payload: dict[str, Any]) -> str:
 
     num_slides = payload.get("num_slides", 10)
     style = payload.get("style", "technical")
-    theme = payload.get("theme", "default")
+    theme = payload.get("theme", "penguin")
     language = payload.get("language", "ja")
     output_path = payload.get("output_path", "./output/slides.md")
 
@@ -139,10 +139,20 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             },
         }
     except Exception as e:
+        error_msg = str(e)
+        # Provide actionable guidance for MaxTokensReachedException
+        if "max_tokens" in error_msg.lower() or "MaxTokensReached" in error_msg:
+            return {
+                "statusCode": 500,
+                "body": {
+                    "error": error_msg,
+                    "message": "Agent reached max_tokens limit. Try reducing num_slides or simplifying the topic.",
+                },
+            }
         return {
             "statusCode": 500,
             "body": {
-                "error": str(e),
+                "error": error_msg,
                 "message": "Internal server error",
             },
         }

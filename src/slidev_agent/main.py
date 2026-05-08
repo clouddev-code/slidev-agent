@@ -50,8 +50,8 @@ Examples:
         "--theme",
         "-t",
         type=str,
-        default="default",
-        help="Slidev theme (default: default)",
+        default="penguin",
+        help="Slidev theme (default: penguin)",
     )
     parser.add_argument(
         "--language",

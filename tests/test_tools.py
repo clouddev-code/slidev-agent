@@ -5,7 +5,10 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
+from slidev_agent.tools.validator import (
+    _parse_slides,
+    validate_slides_fit,
+)
 
 
 class TestWriteSlidevMarkdown:
@@ -151,7 +154,7 @@ class TestAgentConfig:
         assert config.topic == "Test Topic"
         assert config.num_slides == 10
         assert config.style == "technical"
-        assert config.theme == "default"
+        assert config.theme == "penguin"
         assert config.language == "ja"
         assert config.output_path == "./output/slides.md"
 
@@ -174,6 +177,123 @@ class TestAgentConfig:
         assert config.theme == "seriph"
         assert config.language == "en"
         assert config.output_path == "./custom/path.md"
+
+
+SAMPLE_DOC_HEADER = """---
+theme: penguin
+title: Test
+mdc: true
+---
+
+"""
+
+
+class TestValidateSlidesFit:
+    """Tests for validate_slides_fit tool."""
+
+    def test_parses_slides_with_and_without_frontmatter(self):
+        markdown = SAMPLE_DOC_HEADER + (
+            "---\n"
+            "layout: intro\n"
+            "---\n\n"
+            "# Title\n\n"
+            "Subtitle\n\n"
+            "---\n\n"
+            "# Plain slide\n\n"
+            "- one\n"
+            "- two\n"
+        )
+        slides = _parse_slides(markdown)
+        assert len(slides) == 2
+        assert slides[0].layout == "intro"
+        assert slides[1].layout == "default"
+        assert "Title" in slides[0].body
+        assert "Plain slide" in slides[1].body
+
+    def test_short_slide_fits(self):
+        markdown = SAMPLE_DOC_HEADER + (
+            "---\n\n"
+            "# Short slide\n\n"
+            "- bullet 1\n"
+            "- bullet 2\n"
+            "- bullet 3\n"
+        )
+        result = validate_slides_fit(slides_content=markdown)
+        assert result["success"] is True
+        assert result["all_fit"] is True
+        assert result["overflow_count"] == 0
+        assert result["total_slides"] == 1
+
+    def test_long_slide_overflows(self):
+        body = "\n".join([f"- bullet line number {i} with extra context text" for i in range(40)])
+        markdown = SAMPLE_DOC_HEADER + f"---\n\n# Big slide\n\n{body}\n"
+        result = validate_slides_fit(slides_content=markdown)
+        assert result["success"] is True
+        assert result["all_fit"] is False
+        assert 1 in result["overflow_slide_indices"]
+        slide = result["slides"][0]
+        assert slide["overflows"] is True
+        assert slide["estimated_rows"] > slide["max_rows"]
+        assert slide["suggestions"], "expected suggestions for overflowing slide"
+
+    def test_section_layout_has_tighter_budget(self):
+        body = "\n".join(f"line {i}" for i in range(12))
+        markdown = SAMPLE_DOC_HEADER + (
+            "---\nlayout: new-section\n---\n\n"
+            f"# Big section\n\n{body}\n"
+        )
+        result = validate_slides_fit(slides_content=markdown)
+        assert result["overflow_count"] == 1
+        assert result["slides"][0]["layout"] == "new-section"
+
+    def test_two_cols_evaluates_columns_independently(self):
+        # Each column ~5 lines, well within budget
+        markdown = SAMPLE_DOC_HEADER + (
+            "---\nlayout: two-cols\n---\n\n"
+            "# Two cols\n\n"
+            "- a\n- b\n- c\n\n"
+            "::right::\n\n"
+            "- x\n- y\n- z\n"
+        )
+        result = validate_slides_fit(slides_content=markdown)
+        assert result["all_fit"] is True
+        assert result["slides"][0]["layout"] == "two-cols"
+
+    def test_presenter_notes_excluded(self):
+        notes = "\n".join(f"note line {i}" for i in range(80))
+        markdown = SAMPLE_DOC_HEADER + (
+            "---\n\n# Slide\n\nShort body\n\n"
+            f"<!--\n{notes}\n-->\n"
+        )
+        result = validate_slides_fit(slides_content=markdown)
+        assert result["all_fit"] is True
+
+    def test_validate_from_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "slides.md"
+            path.write_text(
+                SAMPLE_DOC_HEADER + "---\n\n# Hello\n\n- one\n",
+                encoding="utf-8",
+            )
+            result = validate_slides_fit(output_path=str(path))
+            assert result["success"] is True
+            assert result["total_slides"] == 1
+
+    def test_missing_file_returns_failure(self):
+        result = validate_slides_fit(output_path="/nonexistent/path/slides.md")
+        assert result["success"] is False
+        assert result["all_fit"] is False
+        assert "not found" in result["message"].lower()
+
+    def test_long_code_block_flagged(self):
+        code = "\n".join(f"line_{i} = {i}" for i in range(40))
+        markdown = SAMPLE_DOC_HEADER + (
+            "---\n\n# Code heavy\n\n```python\n" + code + "\n```\n"
+        )
+        result = validate_slides_fit(slides_content=markdown)
+        assert result["all_fit"] is False
+        reasons = result["slides"][0]["reasons"]
+        assert any("コードブロック" in r for r in reasons)
 
 
 class TestBuildUserPrompt:

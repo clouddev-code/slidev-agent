@@ -61,7 +61,7 @@ web_extract(
 write_slidev_markdown(
     slides_content: str,  # スライドコンテンツ（必須）
     output_path: str = "./output/slides.md",
-    theme: str = "default",
+    theme: str = "penguin",
     title: str = "Presentation"
 ) -> dict[str, Any]
 ```
