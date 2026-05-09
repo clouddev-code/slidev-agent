@@ -1,164 +1,142 @@
-"""AgentCore Runtime handler for Slidev Agent."""
+"""AgentCore Runtime entrypoint for Slidev Agent (multi-agent Graph).
+
+Runs the Strands Graph (planner→researcher→writer→validator) inside
+`BedrockAgentCoreApp`. Streams multi-agent events back to the caller as
+SSE so the Lambda glue can persist progress to AppSync `SlideJob.logs`.
+"""
+
+from __future__ import annotations
 
 import json
 import os
 from typing import Any
 
-from strands import Agent
+from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
-from .agent import create_model
-from .prompts import SYSTEM_PROMPT
-from .tools import web_extract, web_search, write_slidev_markdown
+from .agent import (
+    SlidevAgentConfig,
+    build_graph_seed_prompt,
+    create_slidev_graph,
+)
 
-
-def create_agent() -> Agent:
-    """Create the Slidev agent for AgentCore Runtime."""
-    model = create_model()
-
-    agent = Agent(
-        model=model,
-        system_prompt=SYSTEM_PROMPT,
-        tools=[web_search, web_extract, write_slidev_markdown],
-    )
-
-    return agent
+app = BedrockAgentCoreApp()
 
 
-def build_prompt_from_payload(payload: dict[str, Any]) -> str:
+def _resolve_output_path(payload: dict[str, Any], job_id: str) -> str:
+    """Resolve the writer output path.
+
+    Priority:
+      1. `payload["output_path"]` (caller-supplied; AppSync Lambda passes the
+         exact S3 URI it wants).
+      2. `s3://$SLIDES_BUCKET/jobs/{job_id}/slides.md` if SLIDES_BUCKET is set.
+      3. `./output/slides.md` for local dev.
     """
-    Build user prompt from AgentCore Runtime payload.
+    if payload.get("output_path"):
+        return str(payload["output_path"])
+    bucket = os.getenv("SLIDES_BUCKET")
+    if bucket:
+        return f"s3://{bucket}/jobs/{job_id}/slides.md"
+    return "./output/slides.md"
 
-    Args:
-        payload: Request payload containing:
-            - topic: Presentation topic (required)
-            - num_slides: Number of slides (default: 10)
-            - style: Presentation style (default: technical)
-            - theme: Slidev theme (default: default)
-            - language: Output language (default: ja)
 
-    Returns:
-        Formatted prompt string.
-    """
-    topic = payload.get("topic", "")
+def _build_config(payload: dict[str, Any], context: Any) -> SlidevAgentConfig:
+    topic = payload.get("topic")
     if not topic:
         raise ValueError("'topic' is required in payload")
 
-    num_slides = payload.get("num_slides", 10)
-    style = payload.get("style", "technical")
-    theme = payload.get("theme", "penguin")
-    language = payload.get("language", "ja")
-    output_path = payload.get("output_path", "./output/slides.md")
+    job_id = (
+        payload.get("job_id")
+        or getattr(context, "session_id", None)
+        or "local"
+    )
 
-    style_descriptions = {
-        "technical": "技術的で詳細な内容、コード例を含む",
-        "business": "ビジネス向け、ROIや価値を強調",
-        "educational": "教育的で初心者にも分かりやすい説明",
-        "pitch": "説得力のある、問題解決型のプレゼンテーション",
-    }
-
-    language_instructions = {
-        "ja": "日本語で作成してください。",
-        "en": "Please create in English.",
-    }
-
-    prompt = f"""以下の条件でSlidevプレゼンテーションを作成してください。
-
-## トピック
-{topic}
-
-## 要件
-- スライド数: 約{num_slides}枚
-- スタイル: {style} ({style_descriptions.get(style, style)})
-- テーマ: {theme}
-- 出力先: {output_path}
-- 言語: {language_instructions.get(language, f"{language}で作成")}
-
-## 手順
-1. まず、トピックについてweb_searchツールで3-5回検索して情報を収集してください
-2. 必要に応じてweb_extractで詳細情報を取得してください
-3. 収集した情報を基にスライドを構成してください
-4. write_slidev_markdownツールで最終的なMarkdownファイルを出力してください
-
-必ず最後にwrite_slidev_markdownツールを使用してファイルを保存してください。
-"""
-
-    return prompt
+    return SlidevAgentConfig(
+        topic=topic,
+        num_slides=int(payload.get("num_slides", 10)),
+        style=payload.get("style", "technical"),
+        theme=payload.get("theme", "penguin"),
+        language=payload.get("language", "ja"),
+        output_path=_resolve_output_path(payload, job_id),
+    )
 
 
-# Global agent instance for AgentCore Runtime
-_agent: Agent | None = None
+def _serialize_event(event: Any) -> dict[str, Any]:
+    """Convert a Strands multi-agent event into a JSON-serialisable dict."""
+    if isinstance(event, dict):
+        out: dict[str, Any] = {}
+        for k, v in event.items():
+            try:
+                json.dumps(v)
+                out[k] = v
+            except TypeError:
+                out[k] = str(v)
+        return out
+    return {"raw": str(event)}
 
 
-def get_agent() -> Agent:
-    """Get or create the global agent instance."""
-    global _agent
-    if _agent is None:
-        _agent = create_agent()
-    return _agent
+@app.entrypoint
+async def invoke(payload: dict[str, Any], context: Any):
+    """AgentCore entrypoint.
 
-
-def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
-    """
-    AgentCore Runtime handler function.
-
-    This is the entry point for AgentCore Runtime invocations.
-
-    Args:
-        event: Request event containing the payload.
-        context: Runtime context (unused but required by interface).
-
-    Returns:
-        Response dictionary with result or error.
+    Yields a stream of events; each event is one of:
+      - {"type": "node_start", "node_id": "..."}
+      - {"type": "node_text",  "node_id": "...", "text": "..."}
+      - {"type": "node_done",  "node_id": "...", "duration_ms": ...}
+      - {"type": "result",     "status": "...", "output_path": "..."}
+      - {"type": "error",      "message": "..."}
     """
     try:
-        # Extract payload from event
-        payload = event.get("payload", event)
-        if isinstance(payload, str):
-            payload = json.loads(payload)
-
-        # Build prompt and run agent
-        prompt = build_prompt_from_payload(payload)
-        agent = get_agent()
-        response = agent(prompt)
-
-        return {
-            "statusCode": 200,
-            "body": {
-                "result": str(response),
-                "topic": payload.get("topic", ""),
-                "output_path": payload.get("output_path", "./output/slides.md"),
-            },
-        }
-
+        config = _build_config(payload, context)
     except ValueError as e:
-        return {
-            "statusCode": 400,
-            "body": {
-                "error": str(e),
-                "message": "Invalid request payload",
-            },
-        }
-    except Exception as e:
-        error_msg = str(e)
-        # Provide actionable guidance for MaxTokensReachedException
-        if "max_tokens" in error_msg.lower() or "MaxTokensReached" in error_msg:
-            return {
-                "statusCode": 500,
-                "body": {
-                    "error": error_msg,
-                    "message": "Agent reached max_tokens limit. Try reducing num_slides or simplifying the topic.",
-                },
-            }
-        return {
-            "statusCode": 500,
-            "body": {
-                "error": error_msg,
-                "message": "Internal server error",
-            },
-        }
+        yield {"type": "error", "message": str(e)}
+        return
+
+    try:
+        graph = create_slidev_graph(config)
+        seed = build_graph_seed_prompt(config)
+
+        async for event in graph.stream_async(seed):
+            etype = event.get("type") if isinstance(event, dict) else None
+
+            if etype == "multiagent_node_start":
+                yield {
+                    "type": "node_start",
+                    "node_id": event.get("node_id"),
+                }
+            elif etype == "multiagent_node_stream":
+                inner = event.get("event", {}) or {}
+                # Forward any text deltas. Different SDK versions emit
+                # `data` (raw text) or {"contentBlockDelta": {...}}.
+                text = inner.get("data")
+                if not text and isinstance(inner.get("delta"), dict):
+                    text = inner["delta"].get("text")
+                if text:
+                    yield {
+                        "type": "node_text",
+                        "node_id": event.get("node_id"),
+                        "text": str(text)[:1000],
+                    }
+            elif etype == "multiagent_node_stop":
+                node_result = event.get("node_result")
+                duration = getattr(node_result, "execution_time", None)
+                yield {
+                    "type": "node_done",
+                    "node_id": event.get("node_id"),
+                    "duration_ms": duration,
+                }
+            elif etype == "multiagent_result":
+                result = event.get("result")
+                status = getattr(result, "status", None)
+                yield {
+                    "type": "result",
+                    "status": str(status) if status is not None else "completed",
+                    "output_path": config.output_path,
+                }
+            else:
+                yield _serialize_event(event)
+    except Exception as e:  # pragma: no cover - defensive
+        yield {"type": "error", "message": str(e)}
 
 
-# AgentCore Runtime entry point
-def agentcore_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
-    """Alias for handler - AgentCore Runtime entry point."""
-    return handler(event, context)
+if __name__ == "__main__":
+    app.run()

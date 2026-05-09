@@ -1,0 +1,44 @@
+{
+  "name": "slidev-agent-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "sandbox": "ampx sandbox",
+    "sandbox:delete": "ampx sandbox delete",
+    "pipeline-deploy": "ampx pipeline-deploy"
+  },
+  "dependencies": {
+    "@aws-amplify/adapter-nextjs": "1.7.2",
+    "@aws-amplify/backend": "1.22.0",
+    "@aws-amplify/backend-cli": "1.8.2",
+    "@aws-amplify/ui-react": "6.15.3",
+    "@aws-crypto/sha256-js": "5.2.0",
+    "@aws-sdk/client-bedrock-agentcore": "3.1040.0",
+    "@aws-sdk/credential-provider-node": "3.972.37",
+    "@smithy/protocol-http": "5.3.14",
+    "@smithy/signature-v4": "5.3.14",
+    "aws-amplify": "6.16.4",
+    "aws-cdk-lib": "2.252.0",
+    "constructs": "10.6.0",
+    "next": "14.2.18",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-markdown": "9.0.1",
+    "remark-gfm": "4.0.1",
+    "ulid": "3.0.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "8.10.145",
+    "@types/node": "22.10.0",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "esbuild": "0.27.7",
+    "eslint": "8.57.1",
+    "eslint-config-next": "14.2.18",
+    "typescript": "5.4.5"
+  }
+}

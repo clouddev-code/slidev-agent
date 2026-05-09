@@ -13,8 +13,33 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from strands import tool
+
+
+def _read_markdown(path_or_uri: str) -> str | None:
+    """Read Slidev markdown from local path or `s3://` URI.
+
+    Returns None if the resource cannot be located.
+    """
+    if path_or_uri.startswith("s3://"):
+        try:
+            import boto3
+
+            parsed = urlparse(path_or_uri)
+            bucket = parsed.netloc
+            key = parsed.path.lstrip("/")
+            if not bucket or not key:
+                return None
+            obj = boto3.client("s3").get_object(Bucket=bucket, Key=key)
+            return obj["Body"].read().decode("utf-8")
+        except Exception:
+            return None
+    p = Path(path_or_uri)
+    if not p.exists():
+        return None
+    return p.read_text(encoding="utf-8")
 
 # Per-layout content budget. Values are tuned for Slidev's default 16:9
 # canvas with default font sizing. Each "row" roughly corresponds to one
@@ -384,18 +409,17 @@ def validate_slides_fit(
     """
     try:
         if slides_content is None:
-            path = Path(output_path)
-            if not path.exists():
+            markdown = _read_markdown(output_path)
+            if markdown is None:
                 return {
                     "success": False,
                     "all_fit": False,
-                    "message": f"File not found: {path}",
+                    "message": f"File not found or unreadable: {output_path}",
                     "total_slides": 0,
                     "overflow_count": 0,
                     "overflow_slide_indices": [],
                     "slides": [],
                 }
-            markdown = path.read_text(encoding="utf-8")
         else:
             markdown = slides_content
 
