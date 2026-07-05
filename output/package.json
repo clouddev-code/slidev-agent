@@ -1,0 +1,20 @@
+{
+  "name": "output",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@iconify-json/logos": "^1.2.11",
+    "@slidev/cli": "^52.16.0",
+    "npm-check-updates": "22.2.7",
+    "slidev-theme-penguin": "latest",
+    "vite-svg-loader": "^5.1.1"
+  }
+}

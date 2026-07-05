@@ -2,7 +2,7 @@
 name = "slidev-agent"
 version = "0.1.0"
 description = "AI-powered Slidev presentation generator using Bedrock AgentCore and Vertex AI"
-readme = "README.md"
+readme = "docs/README.md"
 requires-python = ">=3.13"
 dependencies = [
     "strands-agents[gemini]>=1.27.0",
