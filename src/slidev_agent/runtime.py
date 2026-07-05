@@ -15,6 +15,7 @@ from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
 from .agent import (
     SlidevAgentConfig,
+    _writer_invocation_state,
     build_graph_seed_prompt,
     create_slidev_graph,
 )
@@ -94,8 +95,9 @@ async def invoke(payload: dict[str, Any], context: Any):
     try:
         graph = create_slidev_graph(config)
         seed = build_graph_seed_prompt(config)
+        invocation_state = _writer_invocation_state(config)
 
-        async for event in graph.stream_async(seed):
+        async for event in graph.stream_async(seed, invocation_state=invocation_state):
             etype = event.get("type") if isinstance(event, dict) else None
 
             if etype == "multiagent_node_start":

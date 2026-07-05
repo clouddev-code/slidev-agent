@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from strands import tool
+from strands import ToolContext, tool
 
 
 def _build_full_content(slides_content: str, theme: str, title: str) -> str:
@@ -66,9 +66,10 @@ def _write_local(path_str: str, body: str) -> dict[str, Any]:
     }
 
 
-@tool
+@tool(context=True)
 def write_slidev_markdown(
     slides_content: str,
+    tool_context: ToolContext,
     output_path: str = "./output/slides.md",
     theme: str = "penguin",
     title: str = "Presentation",
@@ -93,6 +94,13 @@ def write_slidev_markdown(
         - bytes: Bytes written
         - message: Status message
     """
+    state = (tool_context.invocation_state or {}) if tool_context else {}
+    if state.get("output_path"):
+        output_path = state["output_path"]
+    if state.get("theme"):
+        theme = state["theme"]
+    if state.get("topic"):
+        title = state["topic"]
     full_content = _build_full_content(slides_content, theme, title)
     try:
         if output_path.startswith("s3://"):

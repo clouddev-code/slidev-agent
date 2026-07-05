@@ -19,5 +19,5 @@ new SlidevAgentRuntimeStack(app, 'SlidevAgentRuntimeStack', {
   slidesBucketName: app.node.tryGetContext('slidesBucketName'),
   tavilySecretName: app.node.tryGetContext('tavilySecretName') ?? 'slidev-agent/TAVILY_API_KEY',
   bedrockModelId:
-    app.node.tryGetContext('bedrockModelId') ?? 'us.anthropic.claude-opus-4-6-v1',
+    app.node.tryGetContext('bedrockModelId') ?? 'us.anthropic.claude-opus-4-6-v1:0',
 });

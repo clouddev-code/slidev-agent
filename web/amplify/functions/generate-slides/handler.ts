@@ -104,6 +104,7 @@ interface SlideJobInput {
   language: string;
   status: string;
   owner?: string;
+  identityId?: string;
 }
 
 function fromImage(image: Record<string, unknown> | undefined): SlideJobInput | null {
@@ -125,6 +126,7 @@ function fromImage(image: Record<string, unknown> | undefined): SlideJobInput | 
     language: get('language') ?? 'ja',
     status: get('status') ?? 'PENDING',
     owner: get('owner'),
+    identityId: get('identityId'),
   };
 }
 
@@ -135,7 +137,12 @@ async function runJob(job: SlideJobInput): Promise<void> {
   if (!SLIDES_BUCKET) throw new Error('SLIDES_BUCKET env not set');
 
   const sessionId = `slidev-${job.id}-${Math.random().toString(36).slice(2, 12)}`.padEnd(34, '0');
-  const s3Key = `jobs/${job.id}/slides.md`;
+  // Use identityId so the S3 path matches the Amplify Storage rule
+  // `jobs/{entity_id}/*` (entity_id = Cognito Identity Pool ID).
+  const jobPrefix = job.identityId
+    ? `jobs/${job.identityId}/${job.id}`
+    : `jobs/${job.id}`;
+  const s3Key = `${jobPrefix}/slides.md`;
   const outputUri = `s3://${SLIDES_BUCKET}/${s3Key}`;
 
   await updateJob({

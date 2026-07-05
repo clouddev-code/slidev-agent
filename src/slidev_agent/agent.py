@@ -56,7 +56,7 @@ def create_model(provider: str | None = None):
         model_id = os.getenv("GEMINI_MODEL_ID", "gemini-3.1-pro-preview")
         return GeminiModel(model_id=model_id, max_tokens=16384)
 
-    model_id = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
+    model_id = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1:0")
     region = os.getenv("AWS_REGION", "us-east-1")
     return BedrockModel(model_id=model_id, region_name=region, max_tokens=16384)
 

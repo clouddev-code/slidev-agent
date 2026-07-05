@@ -16,6 +16,7 @@ const schema = a.schema({
       theme: a.string().default('penguin'),
       language: a.string().default('ja'),
       status: a.enum(['PENDING', 'RUNNING', 'DONE', 'FAILED']),
+      identityId: a.string(),
       s3Key: a.string(),
       logs: a.string().array(),
       errorMessage: a.string(),

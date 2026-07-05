@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import { client } from '@/lib/amplify-client';
 
 const STYLES = ['technical', 'business', 'educational', 'pitch'] as const;
@@ -23,6 +24,8 @@ export function SlideForm() {
     setSubmitting(true);
     setError(null);
     try {
+      const session = await fetchAuthSession();
+      const identityId = session.identityId;
       const { data, errors } = await client.models.SlideJob.create({
         topic: topic.trim(),
         numSlides,
@@ -30,6 +33,7 @@ export function SlideForm() {
         theme,
         language,
         status: 'PENDING',
+        identityId,
       });
       if (errors?.length) throw new Error(errors[0].message);
       if (!data) throw new Error('No SlideJob returned');
