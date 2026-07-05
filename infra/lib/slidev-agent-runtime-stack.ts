@@ -60,13 +60,24 @@ export class SlidevAgentRuntimeStack extends cdk.Stack {
     });
 
     // ---- Bedrock InvokeModel (Claude Opus 4.6 + cross-region inference profile) ----
+    // Cross-region (system) inference profiles like `us.anthropic...` require both
+    // the inference-profile ARN and the underlying foundation-model ARN across the
+    // regions the profile spans. Strip the regional prefix when building the
+    // foundation-model ARN, and use `*` only on the region segment.
+    const foundationModelId = props.bedrockModelId.replace(
+      /^(us|eu|apac)\./,
+      '',
+    );
     this.runtime.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [
           'bedrock:InvokeModel',
           'bedrock:InvokeModelWithResponseStream',
         ],
-        resources: ['*'],
+        resources: [
+          `arn:${this.partition}:bedrock:*::foundation-model/${foundationModelId}`,
+          `arn:${this.partition}:bedrock:${this.region}:${this.account}:inference-profile/${props.bedrockModelId}`,
+        ],
       }),
     );
 

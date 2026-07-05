@@ -22,6 +22,8 @@ const tableStack = Stack.of(slideJobTable);
 // 1) DynamoDB Streams → Lambda
 // ----------------------------------------------------------------------------
 
+// DescribeStream/GetRecords/GetShardIterator support resource-level scoping to
+// the specific stream ARN. ListStreams is account-level only and must use `*`.
 const streamPolicy = new Policy(tableStack, 'GenerateSlidesStreamPolicy', {
   statements: [
     new PolicyStatement({
@@ -30,8 +32,12 @@ const streamPolicy = new Policy(tableStack, 'GenerateSlidesStreamPolicy', {
         'dynamodb:DescribeStream',
         'dynamodb:GetRecords',
         'dynamodb:GetShardIterator',
-        'dynamodb:ListStreams',
       ],
+      resources: [slideJobTable.tableStreamArn!],
+    }),
+    new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ['dynamodb:ListStreams'],
       resources: ['*'],
     }),
   ],

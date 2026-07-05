@@ -1,20 +1,22 @@
 'use client';
 
-import { Authenticator } from '@aws-amplify/ui-react';
+import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-export default function SignInPage() {
+function RedirectAfterSignIn() {
+  const { user } = useAuthenticator((context) => [context.user]);
   const router = useRouter();
+  useEffect(() => {
+    if (user) router.replace('/generate');
+  }, [user, router]);
+  return <p className="muted">Redirecting…</p>;
+}
+
+export default function SignInPage() {
   return (
     <Authenticator>
-      {({ user }) => {
-        // After sign-in, jump to /generate
-        useEffect(() => {
-          if (user) router.replace('/generate');
-        }, [user]);
-        return <p className="muted">Redirecting…</p>;
-      }}
+      <RedirectAfterSignIn />
     </Authenticator>
   );
 }
