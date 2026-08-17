@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import type { ReactNode } from 'react';
-import { configureAmplify } from '@/lib/amplify-client';
+import { CopilotKit } from "@copilotkit/react-core/v2";
 
-configureAmplify();
-
-export function Providers({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <CopilotKit runtimeUrl="/api/copilotkit" agent="slidev-agent">
+      {children}
+    </CopilotKit>
+  );
 }
