@@ -21,9 +21,15 @@ env/
 *.swp
 *.swo
 
+# Node
+node_modules/
+
 # Output files (keep .gitkeep)
 output/*.md
 !output/.gitkeep
+
+# Generated slide output (working directory)
+src/output/
 
 # Test coverage
 .coverage

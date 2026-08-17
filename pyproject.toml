@@ -2,7 +2,7 @@
 name = "slidev-agent"
 version = "0.1.0"
 description = "AI-powered Slidev presentation generator using Bedrock AgentCore and Vertex AI"
-readme = "README.md"
+readme = "docs/README.md"
 requires-python = ">=3.13"
 dependencies = [
     "strands-agents[gemini]>=1.27.0",
@@ -13,6 +13,10 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "rich>=13.0.0",
     "awscrt>=0.23.0",
+    "bedrock-agentcore>=1.8.0,<1.9.0",
+    "ag-ui-strands>=0.2.2",
+    "fastapi>=0.139.2",
+    "uvicorn[standard]>=0.40.0",
 ]
 
 [project.optional-dependencies]
@@ -45,3 +49,4 @@ testpaths = ["tests"]
 
 [tool.uv]
 exclude-newer = "7 days"
+python-preference = "only-system"

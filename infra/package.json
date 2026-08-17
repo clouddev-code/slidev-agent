@@ -1,0 +1,28 @@
+{
+  "name": "slidev-agent-infra",
+  "version": "0.1.0",
+  "private": true,
+  "bin": {
+    "slidev-agent-infra": "bin/slidev-agent-infra.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy",
+    "diff": "cdk diff",
+    "destroy": "cdk destroy"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "aws-cdk": "2.1136.0",
+    "ts-node": "10.9.2",
+    "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.265.0",
+    "constructs": "10.8.1",
+    "npm-check-updates": "23.0.2",
+    "source-map-support": "0.5.21"
+  }
+}
