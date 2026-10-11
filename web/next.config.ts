@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Self-contained server for the Lambda Web Adapter image (see Dockerfile).
+  output: "standalone",
 };
 
 export default nextConfig;

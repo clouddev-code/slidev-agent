@@ -1,0 +1,11 @@
+{
+  "name": "slidev-agent-site-builder",
+  "private": true,
+  "description": "Slidev toolchain baked into the AgentCore Runtime image to build the web preview",
+  "dependencies": {
+    "@iconify-json/logos": "1.2.11",
+    "@slidev/cli": "52.20.1",
+    "slidev-theme-penguin": "2.3.1",
+    "vite-svg-loader": "5.1.1"
+  }
+}

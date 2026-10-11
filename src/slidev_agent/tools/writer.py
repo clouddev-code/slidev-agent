@@ -7,6 +7,7 @@ upload via boto3, otherwise treated as a local filesystem path).
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -15,10 +16,13 @@ from strands import ToolContext, tool
 
 
 def _build_full_content(slides_content: str, theme: str, title: str) -> str:
+    # The title is the raw user request (may be multi-line or start with
+    # `- `), so emit it as a single-line JSON string, which is valid YAML.
+    yaml_title = json.dumps(" ".join(title.split()), ensure_ascii=False)
     frontmatter = (
         "---\n"
         f"theme: {theme}\n"
-        f"title: {title}\n"
+        f"title: {yaml_title}\n"
         "transition: slide-left\n"
         "mdc: true\n"
         "---\n\n"

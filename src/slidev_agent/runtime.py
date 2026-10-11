@@ -7,6 +7,7 @@ SSE so the Lambda glue can persist progress to AppSync `SlideJob.logs`.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from typing import Any
@@ -19,6 +20,7 @@ from .agent import (
     build_graph_seed_prompt,
     create_slidev_graph,
 )
+from .site_builder import build_site
 
 app = BedrockAgentCoreApp()
 
@@ -84,7 +86,12 @@ async def invoke(payload: dict[str, Any], context: Any):
       - {"type": "node_text",  "node_id": "...", "text": "..."}
       - {"type": "node_done",  "node_id": "...", "duration_ms": ...}
       - {"type": "result",     "status": "...", "output_path": "..."}
+      - {"type": "preview",    "site_uri": "..."}   (only with `preview_base`)
+      - {"type": "preview_error", "message": "..."}
       - {"type": "error",      "message": "..."}
+
+    `payload["preview_base"]` (URL path the frontend serves the site under)
+    enables building the deck into a static Slidev site after generation.
     """
     try:
         config = _build_config(payload, context)
@@ -92,6 +99,7 @@ async def invoke(payload: dict[str, Any], context: Any):
         yield {"type": "error", "message": str(e)}
         return
 
+    completed = False
     try:
         graph = create_slidev_graph(config)
         seed = build_graph_seed_prompt(config)
@@ -129,6 +137,7 @@ async def invoke(payload: dict[str, Any], context: Any):
             elif etype == "multiagent_result":
                 result = event.get("result")
                 status = getattr(result, "status", None)
+                completed = True
                 yield {
                     "type": "result",
                     "status": str(status) if status is not None else "completed",
@@ -138,6 +147,15 @@ async def invoke(payload: dict[str, Any], context: Any):
                 yield _serialize_event(event)
     except Exception as e:  # pragma: no cover - defensive
         yield {"type": "error", "message": str(e)}
+        return
+
+    preview_base = payload.get("preview_base")
+    if completed and preview_base:
+        try:
+            site_uri = await asyncio.to_thread(build_site, config.output_path, preview_base)
+            yield {"type": "preview", "site_uri": site_uri}
+        except Exception as e:
+            yield {"type": "preview_error", "message": str(e)}
 
 
 if __name__ == "__main__":

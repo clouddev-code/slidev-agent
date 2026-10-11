@@ -105,6 +105,15 @@ a {
   border: none;
 }
 
+.slidev-preview__empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  opacity: 0.6;
+}
+
 .tool-activity {
   display: flex;
   flex-direction: column;
