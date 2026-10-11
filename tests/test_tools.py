@@ -137,6 +137,28 @@ class TestWebExtract:
 
         assert result["success"] is True
         assert result["content"] == "Extracted content here"
+        assert result["truncated"] is False
+
+    @patch("slidev_agent.tools.search._get_tavily_client")
+    def test_web_extract_truncates_long_content(self, mock_get_client):
+        """Test long pages are cut to MAX_EXTRACT_CHARS."""
+        from slidev_agent.tools.search import MAX_EXTRACT_CHARS, web_extract
+
+        mock_client = MagicMock()
+        mock_client.extract.return_value = {
+            "results": [
+                {
+                    "url": "https://example.com",
+                    "raw_content": "x" * (MAX_EXTRACT_CHARS + 1),
+                }
+            ]
+        }
+        mock_get_client.return_value = mock_client
+
+        result = web_extract(url="https://example.com")
+
+        assert len(result["content"]) == MAX_EXTRACT_CHARS
+        assert result["truncated"] is True
 
     @patch("slidev_agent.tools.search._get_tavily_client")
     def test_web_extract_no_results(self, mock_get_client):

@@ -8,6 +8,9 @@ from typing import Any
 from strands import tool
 from tavily import TavilyClient
 
+# Full pages bloat the researcher's context; the notes only need the gist.
+MAX_EXTRACT_CHARS = 10_000
+
 
 @lru_cache(maxsize=1)
 def _get_identity_api_key(provider_name: str) -> str:
@@ -119,9 +122,11 @@ def web_extract(url: str) -> dict[str, Any]:
 
         if response.get("results"):
             result = response["results"][0]
+            content = result.get("raw_content") or ""
             return {
                 "url": result.get("url", url),
-                "content": result.get("raw_content", ""),
+                "content": content[:MAX_EXTRACT_CHARS],
+                "truncated": len(content) > MAX_EXTRACT_CHARS,
                 "success": True,
             }
         else:
