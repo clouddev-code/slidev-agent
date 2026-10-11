@@ -25,7 +25,7 @@ from functools import lru_cache
 from typing import Any, Literal
 
 from strands import Agent
-from strands.models import BedrockModel
+from strands.models import BedrockModel, CacheConfig
 from strands.multiagent import GraphBuilder
 
 from .prompts import SYSTEM_PROMPT
@@ -36,13 +36,18 @@ from .tools import (
     write_slidev_markdown,
 )
 
-
 # ---------------------------------------------------------------------------
 # Model factory
 # ---------------------------------------------------------------------------
 
 
 ANTHROPIC_AUDIENCE = "https://api.anthropic.com"
+
+# Prompt caching for Claude (Claude API and Bedrock): cache points on the
+# system prompt, the tool definitions and the latest user message, so each
+# tool-loop turn and the writer↔validator revisions reuse the prefix.
+# "auto" leaves non-Claude Bedrock model IDs uncached.
+PROMPT_CACHE_CONFIG = CacheConfig(strategy="auto", tools_ttl=True)
 
 
 def _get_sts_web_identity_token() -> str:
@@ -80,7 +85,12 @@ def _anthropic_model(model_id: str):
                 workspace_id=os.getenv("ANTHROPIC_WORKSPACE_ID"),
             )
         }
-    return AnthropicModel(client_args=client_args, model_id=model_id, max_tokens=16384)
+    return AnthropicModel(
+        client_args=client_args,
+        model_id=model_id,
+        max_tokens=16384,
+        cache_config=PROMPT_CACHE_CONFIG,
+    )
 
 
 def create_model(provider: str | None = None):
@@ -103,7 +113,12 @@ def create_model(provider: str | None = None):
 
     model_id = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-opus-4-6-v1:0")
     region = os.getenv("AWS_REGION", "us-east-1")
-    return BedrockModel(model_id=model_id, region_name=region, max_tokens=16384)
+    return BedrockModel(
+        model_id=model_id,
+        region_name=region,
+        max_tokens=16384,
+        cache_config=PROMPT_CACHE_CONFIG,
+    )
 
 
 # ---------------------------------------------------------------------------
