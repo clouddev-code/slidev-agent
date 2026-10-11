@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any, Literal
 
 from strands import Agent
@@ -41,14 +42,58 @@ from .tools import (
 # ---------------------------------------------------------------------------
 
 
+ANTHROPIC_AUDIENCE = "https://api.anthropic.com"
+
+
+def _get_sts_web_identity_token() -> str:
+    """Fetch an AWS-signed OIDC token for the Claude API (re-called on refresh)."""
+    import boto3
+
+    # GetWebIdentityToken is only served by regional STS endpoints.
+    sts = boto3.client("sts", region_name=os.getenv("AWS_REGION", "us-east-1"))
+    resp = sts.get_web_identity_token(
+        Audience=[ANTHROPIC_AUDIENCE],
+        SigningAlgorithm="RS256",
+        DurationSeconds=900,
+    )
+    return resp["WebIdentityToken"]
+
+
+@lru_cache(maxsize=1)
+def _anthropic_model(model_id: str):
+    """Claude Platform model, shared per process: the client's token cache
+    keeps the exchanged access token across invocations."""
+    from strands.models.anthropic import AnthropicModel
+
+    # WIF when the federation rule is configured (AgentCore Runtime);
+    # otherwise the SDK falls back to ANTHROPIC_API_KEY (local dev).
+    client_args = None
+    if os.getenv("ANTHROPIC_FEDERATION_RULE_ID"):
+        from anthropic import WorkloadIdentityCredentials
+
+        client_args = {
+            "credentials": WorkloadIdentityCredentials(
+                identity_token_provider=_get_sts_web_identity_token,
+                federation_rule_id=os.environ["ANTHROPIC_FEDERATION_RULE_ID"],
+                organization_id=os.environ["ANTHROPIC_ORGANIZATION_ID"],
+                service_account_id=os.environ["ANTHROPIC_SERVICE_ACCOUNT_ID"],
+                workspace_id=os.getenv("ANTHROPIC_WORKSPACE_ID"),
+            )
+        }
+    return AnthropicModel(client_args=client_args, model_id=model_id, max_tokens=16384)
+
+
 def create_model(provider: str | None = None):
     """Create a model instance based on the provider.
 
     Args:
-        provider: Model provider ('bedrock' or 'vertexai').
-                  Defaults to env MODEL_PROVIDER or 'bedrock'.
+        provider: Model provider ('anthropic', 'bedrock' or 'vertexai').
+                  Defaults to env MODEL_PROVIDER or 'anthropic'.
     """
-    provider = provider or os.getenv("MODEL_PROVIDER", "bedrock")
+    provider = provider or os.getenv("MODEL_PROVIDER", "anthropic")
+
+    if provider == "anthropic":
+        return _anthropic_model(os.getenv("ANTHROPIC_MODEL_ID", "claude-sonnet-5-5"))
 
     if provider == "vertexai":
         from strands.models.gemini import GeminiModel

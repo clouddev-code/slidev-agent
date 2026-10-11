@@ -33,8 +33,19 @@ class TestWriteSlidevMarkdown:
 
             content = Path(output_path).read_text()
             assert "theme: seriph" in content
-            assert "title: Test Presentation" in content
+            assert 'title: "Test Presentation"' in content
             assert "# Hello World" in content
+
+    def test_write_multiline_title_is_valid_yaml(self):
+        """A raw multi-line user request as title must not break the headmatter."""
+        import yaml
+
+        from slidev_agent.tools.writer import _build_full_content
+
+        content = _build_full_content("# Hello", "penguin", '- Self intro\n- AWS: "re:Invent"')
+
+        headmatter = content.split("---\n")[1]
+        assert yaml.safe_load(headmatter)["title"] == '- Self intro - AWS: "re:Invent"'
 
     def test_write_creates_directory(self):
         """Test that missing directories are created."""
@@ -329,3 +340,16 @@ class TestBuildUserPrompt:
 
         assert "Test Topic" in prompt
         assert "English" in prompt
+
+
+class TestSiteBuilder:
+    """Tests for the static preview site post-processing."""
+
+    def test_inject_storage_shim_runs_first_in_head(self):
+        from slidev_agent.site_builder import _STORAGE_SHIM, inject_storage_shim
+
+        html = '<!DOCTYPE html><html><head lang="en"><script type="module" src="/a.js"></script></head></html>'
+        patched = inject_storage_shim(html)
+
+        assert patched.startswith('<!DOCTYPE html><html><head lang="en">' + _STORAGE_SHIM)
+        assert patched.count(_STORAGE_SHIM) == 1

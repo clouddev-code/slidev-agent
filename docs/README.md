@@ -17,7 +17,7 @@ AI-powered Slidev presentation generator using Amazon Bedrock AgentCore and Stra
 ## Requirements
 
 - Python 3.13+
-- AWS credentials configured for Bedrock access
+- Claude API access: `ANTHROPIC_API_KEY` for local runs (AgentCore Runtime uses Workload Identity Federation — see [claude-platform-sonnet-5-5-wif.md](claude-platform-sonnet-5-5-wif.md))
 - Tavily API key
 
 ## Installation
@@ -163,7 +163,11 @@ slidev-agent/
 |----------|----------|-------------|
 | `TAVILY_API_KEY` | Yes | Tavily API key for web search |
 | `AWS_REGION` | No | AWS region (default: us-east-1) |
-| `BEDROCK_MODEL_ID` | No | Bedrock model ID (default: Claude Sonnet) |
+| `MODEL_PROVIDER` | No | `anthropic` (default), `bedrock`, or `vertexai` |
+| `ANTHROPIC_MODEL_ID` | No | Claude API model ID (default: `claude-sonnet-5-5`) |
+| `ANTHROPIC_API_KEY` | Local only | Claude API key, used when WIF is not configured |
+| `ANTHROPIC_FEDERATION_RULE_ID` / `ANTHROPIC_ORGANIZATION_ID` / `ANTHROPIC_SERVICE_ACCOUNT_ID` / `ANTHROPIC_WORKSPACE_ID` | Runtime | Workload Identity Federation IDs (set by CDK) |
+| `BEDROCK_MODEL_ID` | No | Bedrock model ID when `MODEL_PROVIDER=bedrock` (default: `us.anthropic.claude-opus-4-6-v1:0`) |
 
 ## License
 

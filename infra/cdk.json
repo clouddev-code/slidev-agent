@@ -1,5 +1,5 @@
 {
-  "app": "npx ts-node --prefer-ts-exts bin/slidev-agent-infra.ts",
+  "app": "npx tsx bin/slidev-agent-infra.ts",
   "watch": {
     "include": ["**"],
     "exclude": [
@@ -13,6 +13,7 @@
     ]
   },
   "context": {
+    "executionRoleName": "SlidevAgentRuntimeRole",
     "@aws-cdk/aws-iam:minimizePolicies": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": ["aws", "aws-cn"]
