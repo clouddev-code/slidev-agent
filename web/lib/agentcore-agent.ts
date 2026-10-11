@@ -31,6 +31,8 @@ const NODE_LABELS: Record<string, string> = {
 // AgentCore requires runtimeSessionId to be at least 33 characters.
 const MIN_SESSION_ID_LENGTH = 33;
 
+const RUNTIME_USER_ID = "slidev-web";
+
 const client = new BedrockAgentCoreClient({});
 
 /**
@@ -90,6 +92,10 @@ export class AgentCoreRuntimeAgent extends AbstractAgent {
       new InvokeAgentRuntimeCommand({
         agentRuntimeArn: this.runtimeArn,
         runtimeSessionId: threadId.padEnd(MIN_SESSION_ID_LENGTH, "0"),
+        // With SigV4, AgentCore only injects a workload access token when a
+        // user id is given; the runtime needs it to read the Tavily key from
+        // AgentCore Identity. The key is not per-user, so a fixed id suffices.
+        runtimeUserId: RUNTIME_USER_ID,
         contentType: "application/json",
         accept: "text/event-stream",
         payload: new TextEncoder().encode(

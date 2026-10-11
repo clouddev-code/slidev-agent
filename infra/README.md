@@ -17,12 +17,14 @@ Set up the AWS account and Claude Console first; see
 - A container engine (Docker / Finch / Podman) for the Docker image asset build.
 - `linux/arm64` target — make sure buildx/Finch is configured for cross-arch
   builds if you are on a different host arch.
-- Tavily API key stored in Secrets Manager:
+- Tavily API key stored in an AgentCore Identity API key credential provider
+  (default name `tavily-api-key`):
   ```bash
-  aws secretsmanager create-secret \
-    --name slidev-agent/TAVILY_API_KEY \
-    --secret-string "tvly-..."
+  aws bedrock-agentcore-control create-api-key-credential-provider \
+    --name tavily-api-key --api-key "tvly-..."
   ```
+  The runtime reads the key with the workload access token AgentCore injects
+  when the caller passes `runtimeUserId` (the web relay does).
 
 ## Deploy
 
@@ -87,7 +89,8 @@ chat runs to the AgentCore Runtime (`web/lib/agentcore-agent.ts`).
 | key                | default                                | meaning                                  |
 |--------------------|----------------------------------------|------------------------------------------|
 | `slidesBucketName` | (none → stack creates a bucket)        | Existing S3 bucket to use instead        |
-| `tavilySecretName` | `slidev-agent/TAVILY_API_KEY`          | Secrets Manager secret name              |
+| `tavilyApiKeyProvider` | `tavily-api-key`                   | AgentCore Identity API key credential provider name |
+| `tavilyApiKeySecretArn` | (prefix match on the provider's secret) | Exact backing secret ARN to scope the read grant to |
 | `modelProvider`    | `anthropic`                            | `anthropic` (Claude Platform / WIF) or `bedrock` |
 | `anthropicModelId` | `claude-sonnet-5-5`                    | Claude API model id                      |
 | `executionRoleName`| `SlidevAgentRuntimeRole` (cdk.json)    | Fixed execution role name (federation rule subject) |

@@ -1,5 +1,6 @@
 """Web search and content extraction tools using Tavily API."""
 
+import asyncio
 import os
 from functools import lru_cache
 from typing import Any
@@ -9,25 +10,37 @@ from tavily import TavilyClient
 
 
 @lru_cache(maxsize=1)
-def _get_secret_api_key(secret_name: str) -> str:
-    """Fetch the Tavily key from Secrets Manager (once per process)."""
-    import boto3
+def _get_identity_api_key(provider_name: str) -> str:
+    """Fetch the Tavily key from an AgentCore Identity API key provider.
 
-    sm = boto3.client("secretsmanager", region_name=os.getenv("AWS_REGION", "us-east-1"))
-    return sm.get_secret_value(SecretId=secret_name)["SecretString"].strip()
+    Needs the workload access token AgentCore Runtime injects per request,
+    which SigV4 callers only get by passing `runtimeUserId`. The key itself is
+    the same for every request, so it is fetched once per process.
+    """
+    from bedrock_agentcore.runtime import BedrockAgentCoreContext
+    from bedrock_agentcore.services.identity import IdentityClient
+
+    token = BedrockAgentCoreContext.get_workload_access_token()
+    if not token:
+        raise ValueError(
+            "Workload access token is not set; invoke the runtime with runtimeUserId"
+        )
+    client = IdentityClient(os.getenv("AWS_REGION", "us-east-1"))
+    # Tools run in a worker thread (asyncio.to_thread), so no loop is running here.
+    return asyncio.run(client.get_api_key(provider_name=provider_name, agent_identity_token=token))
 
 
 def _get_tavily_client() -> TavilyClient:
     """Get Tavily client.
 
-    The key comes from TAVILY_API_KEY (local dev), else from the Secrets
-    Manager secret named by TAVILY_SECRET_NAME (AgentCore Runtime).
+    The key comes from TAVILY_API_KEY (local dev), else from the AgentCore
+    Identity provider named by TAVILY_API_KEY_PROVIDER (AgentCore Runtime).
     """
     api_key = os.getenv("TAVILY_API_KEY")
-    if not api_key and (secret_name := os.getenv("TAVILY_SECRET_NAME")):
-        api_key = _get_secret_api_key(secret_name)
+    if not api_key and (provider_name := os.getenv("TAVILY_API_KEY_PROVIDER")):
+        api_key = _get_identity_api_key(provider_name)
     if not api_key:
-        raise ValueError("Neither TAVILY_API_KEY nor TAVILY_SECRET_NAME is set")
+        raise ValueError("Neither TAVILY_API_KEY nor TAVILY_API_KEY_PROVIDER is set")
     return TavilyClient(api_key=api_key)
 
 

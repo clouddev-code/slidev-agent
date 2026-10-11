@@ -94,10 +94,9 @@ slidev export output/slides.md
 ### Deploy
 
 ```bash
-# Register Tavily API key as secret
-aws secretsmanager create-secret \
-    --name slidev-agent/TAVILY_API_KEY \
-    --secret-string "your-tavily-api-key"
+# Register Tavily API key in AgentCore Identity (see infra/README.md)
+aws bedrock-agentcore-control create-api-key-credential-provider \
+    --name tavily-api-key --api-key "your-tavily-api-key"
 
 # Local development
 agentcore dev

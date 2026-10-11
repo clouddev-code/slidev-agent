@@ -33,7 +33,11 @@ const runtimeStack = new SlidevAgentRuntimeStack(app, 'SlidevAgentRuntimeStack',
   //   cdk deploy -c slidesBucketName=amplify-...slidesbucket
   // If omitted, the stack creates its own slides bucket.
   slidesBucketName: app.node.tryGetContext('slidesBucketName'),
-  tavilySecretName: app.node.tryGetContext('tavilySecretName') ?? 'slidev-agent/TAVILY_API_KEY',
+  tavilyApiKey: {
+    providerName: app.node.tryGetContext('tavilyApiKeyProvider') ?? 'tavily-api-key',
+    // Optional: pin the read grant to the exact backing secret.
+    secretArn: app.node.tryGetContext('tavilyApiKeySecretArn'),
+  },
   modelProvider,
   ...(modelProvider === 'anthropic'
     ? {

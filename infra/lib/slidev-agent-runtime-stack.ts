@@ -13,14 +13,26 @@ export interface SlidevAgentRuntimeStackProps extends cdk.StackProps {
    * on `jobs/*`.
    */
   readonly slidesBucketName?: string;
-  /** Secrets Manager secret name holding the Tavily API key. */
-  readonly tavilySecretName: string;
+  /** AgentCore Identity API key credential provider holding the Tavily key. */
+  readonly tavilyApiKey: TavilyApiKeyProps;
   /** Model backend. `anthropic` = Claude Platform via Workload Identity Federation. */
   readonly modelProvider: 'anthropic' | 'bedrock';
   /** Bedrock model id. Required when `modelProvider` is `bedrock`. */
   readonly bedrockModelId?: string;
   /** Claude Platform settings. Required when `modelProvider` is `anthropic`. */
   readonly anthropic?: AnthropicWifProps;
+}
+
+export interface TavilyApiKeyProps {
+  /** Credential provider name (e.g. `tavily-api-key`). */
+  readonly providerName: string;
+  /**
+   * ARN of the provider's backing secret (`apiKeySecretArn` from
+   * `get-api-key-credential-provider`). Defaults to a prefix match on the
+   * provider's secret name, which survives re-creating the provider (the
+   * random suffix changes).
+   */
+  readonly secretArn?: string;
 }
 
 export interface AnthropicWifProps {
@@ -44,7 +56,7 @@ export interface AnthropicWifProps {
  *  - ECR container image (built from ../Dockerfile)
  *  - AgentCore Runtime (IAM auth, public network)
  *  - Execution role baseline + model access (STS GetWebIdentityToken for the
- *    Claude Platform, or Bedrock InvokeModel) + Secrets Manager + S3 PutObject
+ *    Claude Platform, or Bedrock InvokeModel) + AgentCore Identity API key + S3 PutObject
  *  - S3 bucket for generated slides (unless `slidesBucketName` is given)
  *  - SSM Parameter exposing the runtime ARN to Amplify
  *  - CFN output for the runtime ARN
@@ -86,8 +98,8 @@ export class SlidevAgentRuntimeStack extends cdk.Stack {
         AWS_REGION: this.region,
         MODEL_PROVIDER: props.modelProvider,
         ...this.modelEnvironment(props),
-        // Tavily key is fetched via boto3 inside the agent (Secrets Manager).
-        TAVILY_SECRET_NAME: props.tavilySecretName,
+        // Tavily key is fetched from AgentCore Identity inside the agent.
+        TAVILY_API_KEY_PROVIDER: props.tavilyApiKey.providerName,
         SLIDES_BUCKET: this.slidesBucket.bucketName,
       },
       lifecycleConfiguration: {
@@ -132,15 +144,31 @@ export class SlidevAgentRuntimeStack extends cdk.Stack {
       );
     }
 
-    // ---- Secrets Manager: Tavily API key ----
-    this.runtime.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['secretsmanager:GetSecretValue'],
-        resources: [
-          `arn:${this.partition}:secretsmanager:${this.region}:${this.account}:secret:${props.tavilySecretName}*`,
-        ],
-      }),
-    );
+    // ---- AgentCore Identity: Tavily API key ----
+    // GetResourceApiKey + read on the provider's backing secret. The workload
+    // access token it needs is only injected when the caller passes
+    // runtimeUserId (see the frontend stack).
+    const { providerName, secretArn } = props.tavilyApiKey;
+    agentcore.ApiKeyCredentialProvider.fromApiKeyCredentialProviderAttributes(
+      this,
+      'TavilyApiKeyProvider',
+      {
+        credentialProviderArn: `arn:${this.partition}:bedrock-agentcore:${this.region}:${this.account}:token-vault/default/apikeycredentialprovider/${providerName}`,
+        apiKeySecretArn: secretArn,
+      },
+    ).grantUse(this.runtime);
+    if (!secretArn) {
+      // grantUse widens a tokenized ARN to every Identity secret, so grant
+      // the prefix match on this provider's secret here instead.
+      this.runtime.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
+          resources: [
+            `arn:${this.partition}:secretsmanager:${this.region}:${this.account}:secret:bedrock-agentcore-identity!default/apikey/${providerName}-*`,
+          ],
+        }),
+      );
+    }
 
     this.slidesBucket.grantReadWrite(this.runtime.role, 'jobs/*');
 
