@@ -1,17 +1,33 @@
 """Web search and content extraction tools using Tavily API."""
 
 import os
+from functools import lru_cache
 from typing import Any
 
 from strands import tool
 from tavily import TavilyClient
 
 
+@lru_cache(maxsize=1)
+def _get_secret_api_key(secret_name: str) -> str:
+    """Fetch the Tavily key from Secrets Manager (once per process)."""
+    import boto3
+
+    sm = boto3.client("secretsmanager", region_name=os.getenv("AWS_REGION", "us-east-1"))
+    return sm.get_secret_value(SecretId=secret_name)["SecretString"].strip()
+
+
 def _get_tavily_client() -> TavilyClient:
-    """Get Tavily client with API key from environment."""
+    """Get Tavily client.
+
+    The key comes from TAVILY_API_KEY (local dev), else from the Secrets
+    Manager secret named by TAVILY_SECRET_NAME (AgentCore Runtime).
+    """
     api_key = os.getenv("TAVILY_API_KEY")
+    if not api_key and (secret_name := os.getenv("TAVILY_SECRET_NAME")):
+        api_key = _get_secret_api_key(secret_name)
     if not api_key:
-        raise ValueError("TAVILY_API_KEY environment variable is not set")
+        raise ValueError("Neither TAVILY_API_KEY nor TAVILY_SECRET_NAME is set")
     return TavilyClient(api_key=api_key)
 
 
