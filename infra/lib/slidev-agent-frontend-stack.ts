@@ -58,6 +58,9 @@ export class SlidevAgentFrontendStack extends cdk.Stack {
       },
     });
     props.runtime.grantInvokeRuntime(fn);
+    // The relay passes runtimeUserId so the runtime gets a workload access
+    // token (needed to read the Tavily key from AgentCore Identity).
+    props.runtime.grantInvokeRuntimeForUser(fn);
     props.slidesBucket.grantRead(fn, 'jobs/*');
     fn.addToRolePolicy(
       new iam.PolicyStatement({

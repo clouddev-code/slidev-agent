@@ -10,6 +10,8 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
+import unicodedata
 from typing import Any
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
@@ -42,6 +44,23 @@ def _resolve_output_path(payload: dict[str, Any], job_id: str) -> str:
     return "./output/slides.md"
 
 
+_NUM_SLIDES_RE = re.compile(r"(\d{1,3})\s*(?:枚|ページ|slides?\b)", re.IGNORECASE)
+
+
+def _parse_num_slides(topic: str) -> int | None:
+    """Pick a slide count like "15枚" / "15 slides" out of the user's request.
+
+    The web relay forwards only the last utterance as `topic`, so this is how
+    the chat sets `num_slides`.
+    """
+    # NFKC turns full-width digits ("１５枚") into ASCII.
+    match = _NUM_SLIDES_RE.search(unicodedata.normalize("NFKC", topic))
+    if not match:
+        return None
+    count = int(match.group(1))
+    return count if 1 <= count <= 50 else None
+
+
 def _build_config(payload: dict[str, Any], context: Any) -> SlidevAgentConfig:
     topic = payload.get("topic")
     if not topic:
@@ -55,7 +74,7 @@ def _build_config(payload: dict[str, Any], context: Any) -> SlidevAgentConfig:
 
     return SlidevAgentConfig(
         topic=topic,
-        num_slides=int(payload.get("num_slides", 10)),
+        num_slides=int(payload.get("num_slides") or _parse_num_slides(topic) or 10),
         style=payload.get("style", "technical"),
         theme=payload.get("theme", "penguin"),
         language=payload.get("language", "ja"),
