@@ -10,10 +10,10 @@ export async function proxy(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  return NextResponse.redirect(new URL("/api/auth/login", requestOrigin(req)));
+  return NextResponse.redirect(new URL("/login", requestOrigin(req)));
 }
 
 export const config = {
   // api/slides is public by unguessable run ID and sandboxed (see its route).
-  matcher: ["/((?!api/auth/|api/health|api/slides/|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!login|api/auth/|api/health|api/slides/|_next/static|_next/image|favicon.ico).*)"],
 };
