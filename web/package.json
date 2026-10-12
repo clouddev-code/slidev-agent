@@ -11,8 +11,8 @@
   "dependencies": {
     "@ag-ui/client": "0.0.57",
     "@aws-sdk/client-bedrock-agentcore": "3.1149.0",
+    "@aws-sdk/client-cognito-identity-provider": "3.1149.0",
     "@aws-sdk/client-s3": "3.1149.0",
-    "@aws-sdk/client-ssm": "3.1149.0",
     "@copilotkit/react-core": "1.64.0",
     "@copilotkit/react-ui": "1.64.0",
     "@copilotkit/runtime": "1.64.0",
