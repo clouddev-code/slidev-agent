@@ -178,3 +178,68 @@ a {
     transform: rotate(360deg);
   }
 }
+
+.login {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.login__card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px 28px;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 12px;
+}
+
+.login__title {
+  font-size: 1.5rem;
+}
+
+.login__lead {
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.login__label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.login__input {
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+  border-radius: 8px;
+}
+
+.login__error {
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: #d93025;
+}
+
+.login__button {
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: #fff;
+  background: #2563eb;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.login__button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
